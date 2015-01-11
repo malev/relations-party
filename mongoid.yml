@@ -1,0 +1,6 @@
+development:
+  sessions:
+    default:
+      database: relations-party
+      hosts:
+        - localhost:27017

@@ -1,11 +1,9 @@
-require 'mongoid'
-require 'httparty'
+$: << '.'
+require 'api'
+require 'models'
+
 
 API_KEY = ENV['ALCHEMY_API_KEY']
-
-Mongoid.load!("mongoid.yml", :development)
-Mongoid.logger = Logger.new($stdout)
-Moped.logger = Logger.new($stdout)
 
 links = %W(
 http://www.texastribune.org/2014/08/19/perry-booking/
@@ -25,99 +23,6 @@ http://www.dallasnews.com/news/politics/state-politics/20140820-rick-perry-indic
 http://abcnews.go.com/blogs/politics/2014/08/texas-gov-rick-perry-indicted-by-grand-jury/
 http://www.washingtonpost.com/politics/texas-gov-rick-perry-indicted-for-abuse-of-office-coercion/2014/08/15/d173907c-24d5-11e4-958c-268a320a60ce_story.html
 )
-
-
-class Document
-  include Mongoid::Document
-  field :url, type: String
-  field :title, type: String
-  field :content, type: String
-  field :language, type: String
-  field :published_at, type: DateTime
-
-  has_many :entities
-  has_many :keywords
-end
-
-class Entity
-  include Mongoid::Document
-  field :_type, type: String
-  field :mentions, type: Integer
-  field :text, type: String
-  field :relevance, type: Float
-
-  belongs_to :document
-end
-
-class Keyword
-  include Mongoid::Document
-  field :text, type: String
-  field :relevance, type: Float
-
-  belongs_to :document
-end
-
-class BaseExtractor
-  class ApiError < RuntimeError; end
-  include HTTParty
-  base_uri "access.alchemyapi.com/"
-
-  def initialize(query = {})
-    query = {
-      apikey: API_KEY,
-      outputMode: 'json'
-    }.merge(query)
-
-    @options = {
-      query: query
-    }
-  end
-
-  def call
-    @call ||= _call
-  end
-
-  def _call
-    response = get(text_path, @options)
-    if response.parsed_response['status'] = 'OK'
-      response.parsed_response
-    else
-      raise ApiError
-    end
-  end
-
-  def text_path
-    raise NotImplemented
-  end
-
-  def get(url, options={})
-    self.class.get(url, options)
-  end
-end
-
-class TextExtractor < BaseExtractor
-  def text_path
-    '/calls/url/URLGetText'
-  end
-end
-
-class TitleExtractor < BaseExtractor
-  def text_path
-    '/calls/url/URLGetTitle'
-  end
-end
-
-class EntitiesExtractor < BaseExtractor
-  def text_path
-    '/calls/url/URLGetRankedNamedEntities'
-  end
-end
-
-class KeywordsExtractor < BaseExtractor
-  def text_path
-    '/calls/url/URLGetRankedKeywords'
-  end
-end
 
 def process(links)
   links.each do |link|
