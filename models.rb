@@ -1,3 +1,5 @@
+require 'active_support/all'
+require 'amatch'
 require 'mongoid'
 
 
@@ -20,12 +22,19 @@ end
 
 class Entity
   include Mongoid::Document
-  field :_type, type: String
+  field :__type, type: String
   field :mentions, type: Integer
   field :text, type: String
+  field :lemma, type: String
   field :relevance, type: Float
 
   belongs_to :document
+
+  before_create :store_lemma
+
+  def store_lemma
+    self.lemma = self.text.parameterize
+  end
 end
 
 class Keyword
