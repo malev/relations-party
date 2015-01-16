@@ -40,7 +40,7 @@ def process(links)
     entities_extractor.call['entities'].each do |entity|
       Entity.create(
         document: document,
-        _type: entity['type'],
+        __type: entity['type'],
         relevance: entity['relevance'].to_f,
         mentions: entity['count'].to_i,
         text: entity['text']

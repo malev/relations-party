@@ -35,3 +35,31 @@ class Keyword
 
   belongs_to :document
 end
+
+class Canonical
+  include Mongoid::Document
+  field :text, type: String
+  field :__type, type: String
+  field :representations, type: Hash
+
+  has_many :entities
+
+  before_create :store_text
+
+  def store_text
+    self.text = self.representations[0][1]
+  end
+
+  def add_representation(text)
+    self.representations[text.parameterize] = text
+  end
+
+  def represented?(text)
+    self.representations.has_key? text.parameterize
+  end
+
+  def similarity_with(text)
+    m = JaroWinkler.new(text)
+    self.representations.keys.map { |rep| m.match(rep) }.sort.first
+  end
+end
