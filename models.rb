@@ -1,11 +1,5 @@
 require 'active_support/all'
 require 'amatch'
-require 'mongoid'
-
-
-Mongoid.load!("mongoid.yml", :development)
-Mongoid.logger = Logger.new($stdout)
-Moped.logger = Logger.new($stdout)
 
 
 class Document
@@ -22,13 +16,14 @@ end
 
 class Entity
   include Mongoid::Document
-  field :__type, type: String
+  field :tag, type: String
   field :mentions, type: Integer
   field :text, type: String
   field :lemma, type: String
   field :relevance, type: Float
 
   belongs_to :document
+  belongs_to :canonical
 
   before_create :store_lemma
 
@@ -47,16 +42,26 @@ end
 
 class Canonical
   include Mongoid::Document
+  include Amatch
+
+  MIN_SIMILARITY = 0.9
+
   field :text, type: String
-  field :__type, type: String
-  field :representations, type: Hash
+  field :tag, type: String
+  field :representations, type: Hash, default: {}
 
   has_many :entities
 
   before_create :store_text
 
   def store_text
-    self.text = self.representations[0][1]
+    self.text = self.representations[self.representations.keys[0]]
+  end
+
+  def add(entity)
+    entities << entity
+    add_representation(entity.text)
+    save
   end
 
   def add_representation(text)
@@ -70,5 +75,9 @@ class Canonical
   def similarity_with(text)
     m = JaroWinkler.new(text)
     self.representations.keys.map { |rep| m.match(rep) }.sort.first
+  end
+
+  def valid_similarity_with(text)
+    similarity_with(text) >= MIN_SIMILARITY
   end
 end

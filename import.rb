@@ -1,4 +1,5 @@
 $: << '.'
+require 'boot'
 require 'api'
 require 'models'
 
@@ -40,7 +41,7 @@ def process(links)
     entities_extractor.call['entities'].each do |entity|
       Entity.create(
         document: document,
-        __type: entity['type'],
+        tag: entity['type'],
         relevance: entity['relevance'].to_f,
         mentions: entity['count'].to_i,
         text: entity['text']
